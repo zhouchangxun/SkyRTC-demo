@@ -1,7 +1,7 @@
 var express = require('express');
 var app = express();
 var server = require('http').createServer(app);
-var SkyRTC = require('skyrtc').listen(server);
+var SkyRTC = require('./skyrtc').listen(server);
 var path = require("path");
 
 var port = process.env.PORT || 3000;
@@ -44,3 +44,6 @@ SkyRTC.rtc.on('answer', function(socket, answer) {
 SkyRTC.rtc.on('error', function(error) {
 	console.log("发生错误：" + error.message);
 });
+
+console.log('signal server listening on *:',port);
+

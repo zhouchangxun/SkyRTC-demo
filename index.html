@@ -177,9 +177,9 @@
   rtc.on("connected", function(socket) {
     //创建本地流
     rtc.createStream({
-      "video": false,
-      "audio": false,
-      "onlytext":true
+      "video": true,
+      "audio": true,
+      "onlytext":false
     });
   });
   //创建本地视频流成功
@@ -217,7 +217,7 @@
 
   //连接WebSocket服务器
   console.log('start chat program...');
-  var ws_proto = location.protocol=='http'?'ws:':'wss:';
+  var ws_proto = location.protocol==='http:'?'ws:':'wss:';
   rtc.connect(ws_proto + window.location.href.substring(window.location.protocol.length).split('#')[0], window.location.hash.slice(1));
 </script>
 </html>

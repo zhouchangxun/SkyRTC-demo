@@ -97,7 +97,7 @@ var SkyRTC = function() {
                     "room": room
                 }
             }));
-            that.emit("socket_opened", socket);
+             that.emit("socket_opened", socket);
         };
 
         socket.onmessage = function(message) {
@@ -111,6 +111,7 @@ var SkyRTC = function() {
         };
 
         socket.onerror = function(error) {
+            clearInterval(that.echo_timer);
             that.emit("socket_error", error, socket);
         };
 
@@ -120,6 +121,7 @@ var SkyRTC = function() {
             for (i = pcs.length; i--;) {
                 that.closePeerConnection(pcs[i]);
             }
+            clearInterval(that.echo_timer);
             that.peerConnections = [];
             that.dataChannels = {};
             that.fileChannels = {};
@@ -134,6 +136,17 @@ var SkyRTC = function() {
             that.me = data.you;
             that.emit("get_peers", that.connections);
             that.emit('connected', socket);
+            this.echo_timer = setInterval( function() {
+                 console.log("send echo request!");
+                 socket.send(JSON.stringify({
+                     "eventName": "__echo",
+                     "data": {
+                         "method": "request",
+                         "socketId": that.me 
+                     }
+                 }));
+                 
+            }, 5000);
             console.log('get_peers:',that.connections);
         });
 
