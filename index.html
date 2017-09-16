@@ -217,6 +217,7 @@
 
   //连接WebSocket服务器
   console.log('start chat program...');
-  rtc.connect("ws:" + window.location.href.substring(window.location.protocol.length).split('#')[0], window.location.hash.slice(1));
+  var ws_proto = location.protocol=='http'?'ws:':'wss:';
+  rtc.connect(ws_proto + window.location.href.substring(window.location.protocol.length).split('#')[0], window.location.hash.slice(1));
 </script>
 </html>
