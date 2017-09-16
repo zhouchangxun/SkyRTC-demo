@@ -90,7 +90,7 @@ var SkyRTC = function() {
         room = room || "";
         socket = this.socket = new WebSocket(server);
         socket.onopen = function() {
-            console.log("open websocket success!");
+            console.log("open websocket success!",socket);
             socket.send(JSON.stringify({
                 "eventName": "__join",
                 "data": {
@@ -116,12 +116,22 @@ var SkyRTC = function() {
         };
 
         socket.onclose = function(data) {
-            that.localMediaStream.close();
+            console.log('websocket disconnected...');
+            if(that.localMediaStream){
+               var audios =that.localMediaStream.getAudioTracks();
+               var videos =that.localMediaStream.getVideoTracks();
+               for( var idx in audios){
+                  audios[idx].enabled=false;
+               }
+               for( var idx in videos){
+                  videos[idx].enabled=false;
+               }
+            }
+            clearInterval(that.echo_timer);
             var pcs = that.peerConnections;
             for (i = pcs.length; i--;) {
                 that.closePeerConnection(pcs[i]);
             }
-            clearInterval(that.echo_timer);
             that.peerConnections = [];
             that.dataChannels = {};
             that.fileChannels = {};
@@ -136,8 +146,11 @@ var SkyRTC = function() {
             that.me = data.you;
             that.emit("get_peers", that.connections);
             that.emit('connected', socket);
-            this.echo_timer = setInterval( function() {
-                 console.log("send echo request!");
+            that.echo_timer = setInterval( function() {
+                 if(socket.readyState != 1) {
+                    console.log("websocket state abnormal !");
+                    return;
+                 }
                  socket.send(JSON.stringify({
                      "eventName": "__echo",
                      "data": {
@@ -161,7 +174,9 @@ var SkyRTC = function() {
             that.connections.push(data.socketId);
             var pc = that.createPeerConnection(data.socketId),
                 i, m;
-            //pc.addStream(that.localMediaStream);
+            if(that.localMediaStream){
+               pc.addStream(that.localMediaStream);
+            }
             that.emit('new_peer', data.socketId);
         });
 
@@ -197,7 +212,7 @@ var SkyRTC = function() {
 
         this.on('ready', function() {
             that.createPeerConnections();
-            //that.addStreams();
+            that.addStreams();
             that.addDataChannels();
             that.sendOffers();
         });
@@ -213,13 +228,8 @@ var SkyRTC = function() {
 
         options.video = !!options.video;
         options.audio = !!options.audio;
-        options.onlytext = !!options.onlytext;
-        if (options.onlytext) {
-            that.emit("ready");
-            return;
-        }
 
-        if (getUserMedia) {
+        if (getUserMedia ) {
             this.numStreams++;
             getUserMedia.call(navigator, options, function(stream) {
                     that.localMediaStream = stream;
@@ -230,11 +240,14 @@ var SkyRTC = function() {
                     }
                 },
                 function(error) {
+                    console.warn('text mode only(no found audio/video device)...');
                     that.emit("stream_create_error", error);
+                    that.emit("ready");
                 });
         } else {
             that.emit("stream_create_error", new Error('WebRTC is not yet supported in this browser.'));
         }
+
 
     };
 
@@ -243,6 +256,7 @@ var SkyRTC = function() {
         var i, m,
             stream,
             connection;
+        if(!this.localMediaStream) return;
         for (connection in this.peerConnections) {
             this.peerConnections[connection].addStream(this.localMediaStream);
         }
@@ -286,6 +300,7 @@ var SkyRTC = function() {
             };
         for (i = 0, m = this.connections.length; i < m; i++) {
             pc = this.peerConnections[this.connections[i]];
+            console.log('send offer to peer:',pc);
             pc.createOffer(pcCreateOfferCbGen(pc, this.connections[i]), pcCreateOfferErrorCb);
         }
     };

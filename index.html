@@ -189,7 +189,7 @@
   });
   //创建本地视频流失败
   rtc.on("stream_create_error", function() {
-    alert("create stream failed!");
+    alert("create stream failed!please check your mic or camera");
   });
   //接收到其他用户的视频流
   rtc.on('pc_add_stream', function(stream, socketId) {
