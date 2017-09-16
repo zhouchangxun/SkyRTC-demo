@@ -7,7 +7,7 @@ var SkyRTC = function() {
     var moz = !!navigator.mozGetUserMedia;
     var iceServer = {
         "iceServers": [{
-            "url": "stun:stun.l.google.com:19302"
+            "url": ["stun:stun.l.google.com:19302"]
         }]
     };
     var packetSize = 1000;
@@ -233,6 +233,14 @@ var SkyRTC = function() {
             this.numStreams++;
             getUserMedia.call(navigator, options, function(stream) {
                     that.localMediaStream = stream;
+               var audios =that.localMediaStream.getAudioTracks();
+               var videos =that.localMediaStream.getVideoTracks();
+               for( var idx in audios){
+                  console.log('open audio device:',audios[idx]);
+               }
+               for( var idx in videos){
+                  console.log('open video device:',videos[idx]);
+               }
                     that.initializedStreams++;
                     that.emit("stream_created", stream);
                     if (that.initializedStreams === that.numStreams) {
