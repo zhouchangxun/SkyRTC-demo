@@ -30,7 +30,7 @@ SkyRTC.rtc.on('socket_message', function(socket, msg) {
 });
 
 SkyRTC.rtc.on('ice_candidate', function(socket, ice_candidate) {
-	console.log("接收到来自" + socket.id + "的ICE Candidate");
+	console.log("接收到来自" + socket.id + "的ICE Candidate:\n",ice_candidate);
 });
 
 SkyRTC.rtc.on('offer', function(socket, offer) {
