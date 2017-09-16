@@ -175,10 +175,11 @@
   });
   //成功创建WebSocket连接
   rtc.on("connected", function(socket) {
-    //创建本地视频流
+    //创建本地流
     rtc.createStream({
-      "video": true,
-      "audio": true
+      "video": false,
+      "audio": false,
+      "onlytext":true
     });
   });
   //创建本地视频流成功
@@ -213,7 +214,9 @@
     p.innerText = socketId + ": " + message;
     msgs.appendChild(p);
   });
+
   //连接WebSocket服务器
+  console.log('start chat program...');
   rtc.connect("ws:" + window.location.href.substring(window.location.protocol.length).split('#')[0], window.location.hash.slice(1));
 </script>
 </html>

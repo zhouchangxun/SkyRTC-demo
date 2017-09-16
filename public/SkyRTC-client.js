@@ -83,11 +83,14 @@ var SkyRTC = function() {
 
     //本地连接信道，信道为websocket
     skyrtc.prototype.connect = function(server, room) {
+        console.log("connecting websocket server(%s)...", server);
+
         var socket,
             that = this;
         room = room || "";
         socket = this.socket = new WebSocket(server);
         socket.onopen = function() {
+            console.log("open websocket success!");
             socket.send(JSON.stringify({
                 "eventName": "__join",
                 "data": {
@@ -98,6 +101,7 @@ var SkyRTC = function() {
         };
 
         socket.onmessage = function(message) {
+            console.log('websocket rcv: ',message.data);
             var json = JSON.parse(message.data);
             if (json.eventName) {
                 that.emit(json.eventName, json.data);
@@ -130,6 +134,7 @@ var SkyRTC = function() {
             that.me = data.you;
             that.emit("get_peers", that.connections);
             that.emit('connected', socket);
+            console.log('get_peers:',that.connections);
         });
 
         this.on("_ice_candidate", function(data) {
@@ -143,7 +148,7 @@ var SkyRTC = function() {
             that.connections.push(data.socketId);
             var pc = that.createPeerConnection(data.socketId),
                 i, m;
-            pc.addStream(that.localMediaStream);
+            //pc.addStream(that.localMediaStream);
             that.emit('new_peer', data.socketId);
         });
 
@@ -179,7 +184,7 @@ var SkyRTC = function() {
 
         this.on('ready', function() {
             that.createPeerConnections();
-            that.addStreams();
+            //that.addStreams();
             that.addDataChannels();
             that.sendOffers();
         });
@@ -195,6 +200,11 @@ var SkyRTC = function() {
 
         options.video = !!options.video;
         options.audio = !!options.audio;
+        options.onlytext = !!options.onlytext;
+        if (options.onlytext) {
+            that.emit("ready");
+            return;
+        }
 
         if (getUserMedia) {
             this.numStreams++;
@@ -212,6 +222,7 @@ var SkyRTC = function() {
         } else {
             that.emit("stream_create_error", new Error('WebRTC is not yet supported in this browser.'));
         }
+
     };
 
     //将本地流添加到所有的PeerConnection实例中
@@ -311,10 +322,12 @@ var SkyRTC = function() {
 
     //创建单个PeerConnection
     skyrtc.prototype.createPeerConnection = function(socketId) {
+        console.log('createPeerConnection with peer:', socketId);
         var that = this;
         var pc = new PeerConnection(iceServer);
         this.peerConnections[socketId] = pc;
         pc.onicecandidate = function(evt) {
+            console.log("pc_get_ice_candidate", evt.candidate, socketId, pc);
             if (evt.candidate)
                 that.socket.send(JSON.stringify({
                     "eventName": "__ice_candidate",
@@ -328,14 +341,17 @@ var SkyRTC = function() {
         };
 
         pc.onopen = function() {
+            console.log("pc_opened ", socketId, pc);
             that.emit("pc_opened", socketId, pc);
         };
 
         pc.onaddstream = function(evt) {
+            console.log('pc_add_stream ', evt.stream, socketId, pc);
             that.emit('pc_add_stream', evt.stream, socketId, pc);
         };
 
         pc.ondatachannel = function(evt) {
+            console.log('pc_add_data_channel ', evt.channel, socketId, pc);
             that.addDataChannel(socketId, evt.channel);
             that.emit('pc_add_data_channel', evt.channel, socketId, pc);
         };
@@ -354,6 +370,7 @@ var SkyRTC = function() {
 
     //消息广播
     skyrtc.prototype.broadcast = function(message) {
+        console.log('broadcast msg:', message);
         var socketId;
         for (socketId in this.dataChannels) {
             this.sendMessage(message, socketId);
@@ -372,14 +389,16 @@ var SkyRTC = function() {
 
     //对所有的PeerConnections创建Data channel
     skyrtc.prototype.addDataChannels = function() {
-        var connection;
-        for (connection in this.peerConnections) {
-            this.createDataChannel(connection);
+        console.log('addDataChannels');
+        var socketId;
+        for (socketId in this.peerConnections) {
+            this.createDataChannel(socketId, "DataChannel-"+socketId);
         }
     };
 
     //对某一个PeerConnection创建Data channel
     skyrtc.prototype.createDataChannel = function(socketId, label) {
+        console.log('createDataChannel ', socketId, label);
         var pc, key, channel;
         pc = this.peerConnections[socketId];
 
@@ -401,6 +420,7 @@ var SkyRTC = function() {
 
     //为Data channel绑定相应的事件回调函数
     skyrtc.prototype.addDataChannel = function(socketId, channel) {
+        console.log('addDataChannel ', channel, socketId);
         var that = this;
         channel.onopen = function() {
             that.emit('data_channel_opened', channel, socketId);
